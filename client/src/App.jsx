@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { Route, Routes, Outlet } from 'react-router-dom'
 import Home from './pages/Home'
 import ApplyJob from './pages/ApplyJob'
 import Applications from './pages/Applications'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import RecruiterLogin from './components/RecruiterLogin'
+import { AppContext } from './context/AppContext'
 
 const Layout = () => {
   return (
@@ -20,7 +22,10 @@ const Layout = () => {
 
 
 const App = () => {
+  const {showRecruiterLogin}=useContext(AppContext);
   return (
+    <>
+    {showRecruiterLogin && <RecruiterLogin/>}
     <Routes>
       <Route element={<Layout />}>
         <Route path='/' element={<Home />} />
@@ -28,6 +33,7 @@ const App = () => {
         <Route path='/applications' element={<Applications />} />
       </Route>
     </Routes>
+    </>
   )
 }
 
