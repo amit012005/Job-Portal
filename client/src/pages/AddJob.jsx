@@ -83,7 +83,7 @@ const AddJob = () => {
           <p className="mb-2">Job Level</p>
           <select
             className="w-full px-3 py-2 border-2 border-gray-300 rounded"
-            value={category}
+            value={level}
             onChange={(e) => setLevel(e.target.value)}
             required
           >
@@ -101,6 +101,7 @@ const AddJob = () => {
           type="Number"
           placeholder="2500"
           onChange={(e) => setSalary(e.target.value)}
+            value={salary}
         />
       </div>
       <button className="w-28 p-3 mt-4 bg-black text-white rounded">ADD</button>
