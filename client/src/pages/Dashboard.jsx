@@ -1,25 +1,43 @@
-import React from 'react'
+import React,{useContext, useEffect} from 'react'
 import { Outlet ,useNavigate,NavLink} from 'react-router-dom'
 import { assets } from '../assets/assets'
+import { AppContext } from '../context/AppContext'
 const Dashboard = () => {
     const navigate=useNavigate();
+    const {companyData,setCompanyData,setCompanyToken}=useContext(AppContext);
+
+    //Function to logout
+    const logout=()=>{
+        setCompanyToken(null);
+        localStorage.removeItem('companyToken');
+        setCompanyData(null);
+        navigate('/');
+    }
+    useEffect(()=>{
+        if(companyData){
+            navigate('/dashboard/manage-jobs');
+        }
+    },[companyData])
   return (
     <div className='min-h-screen'>
         {/*Navbar for Recruiter Panel*/}
         <div className='shadow py-4'>
             <div className='px-5 flex justify-between items-center'>
                 <img onClick={()=>navigate('/')} src={assets.logo} alt="Logo" className='max-sm:w-32 cursor-pointer' />
-                <div className='flex items-center gap-3'>
-                    <p className='max-sm:hidden'>Welcome, Amit</p>
+                {companyData && (
+                    <div className='flex items-center gap-3'>
+                    <p className='max-sm:hidden'>Welcome, {companyData.name}</p>
                     <div className='relative group'>
-                        <img className='w-8 border rounded-full' src={assets.company_icon} alt=""/>
+                        <img className='w-8 border rounded-full' src={companyData.image} alt=""/>
                         <div className='hidden group-hover:block absolute right-0 top-0 z-10 text-black rounded pt-12'>
                             <ul className='list-none m-0 p-2 bg-white rounded-md border text-sm'>
-                                <li className='py-1 px-2 cursor-pointer pr-10'>Logout</li>
+                                <li onClick={logout} className='py-1 px-2 cursor-pointer pr-10'>Logout</li>
                             </ul>
                         </div>
                     </div>
                 </div>
+                )}
+                
             </div>
         </div>
         {/*Dashboard*/}

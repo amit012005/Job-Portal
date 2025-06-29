@@ -1,19 +1,72 @@
 import React,{useContext, useEffect, useState} from 'react'
 import { assets } from '../assets/assets'
 import { AppContext } from '../context/AppContext'
+import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+
 const RecruiterLogin = () => {
+    const navigate=useNavigate();
     const [state, setState] =useState('Login');
     const [name, setName] =useState('');
     const [password, setPassword] =useState('');
     const [email, setEmail] =useState('');
     const [image, setImage] =useState(false);
     const [isTextDataSubmitted, setIsTextDataSubmitted] = useState(false);
-    const {setShowRecruiterLogin}=useContext(AppContext);
+    const {setShowRecruiterLogin,backendUrl,setCompanyToken,setCompanyData}=useContext(AppContext);
     const onSubmitHandler=async(e)=>{
         e.preventDefault();
         if(state==="Register" && !isTextDataSubmitted){
-            setIsTextDataSubmitted(true);
+            return setIsTextDataSubmitted(true);
         }
+        try{
+            if(state==="Login"){
+                const {data}=await axios.post(`${backendUrl}/api/company/login`,{
+                    email,
+                    password
+                });
+                if(data.success){
+                    setCompanyToken(data.token);
+                    setCompanyData(data.company);
+                    localStorage.setItem('companyToken',data.token);
+                    setShowRecruiterLogin(false);
+                    navigate('/dashboard');
+                    
+                }else{
+                    alert(data.message);
+                    toast.error(data.message);
+                }
+            }
+            else if(state==="Register"){
+                const formData=new FormData;
+                formData.append('name',name);
+                formData.append('email',email);
+                formData.append('password',password);
+                formData.append('image',image);
+                const {data}=await axios.post(`${backendUrl}/api/company/register`,formData,{
+                    headers:{
+                        'Content-Type':'multipart/form-data'
+                    }
+                });
+                if(data.success){
+                    setCompanyToken(data.token);
+                    setCompanyData(data.company);
+                    localStorage.setItem('companyToken',data.token);
+                    setShowRecruiterLogin(false);
+                    navigate('/dashboard');
+                    
+                }else{
+                    alert(data.message);
+                    toast.error(data.message);
+                }
+            }
+            
+        }
+        catch(error){
+            console.log(error);
+            toast.error("Something went wrong. Please try again later.");
+        }
+
     }
     useEffect(()=>{
         document.body.style.overflow="hidden";

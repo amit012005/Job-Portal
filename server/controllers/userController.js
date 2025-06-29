@@ -25,8 +25,8 @@ export const applyForJob = async (req, res) => {
     const userId=req.auth.userId;
     try {
         const isAlreadyApplied = await JobApplication.findOne({ userId, jobId });
-        if (isAlreadyApplied.length > 0) {
-            return res.status(400).json({ success: false, message: "You have already applied for this job" });
+        if (isAlreadyApplied) {
+            return res.status(400).json({ success: false, message: "You have already applied for job" });
         }
         const jobData= await Job.findById(jobId);
         if(!jobData){
@@ -41,6 +41,7 @@ export const applyForJob = async (req, res) => {
         await jobApplication.save();
         return res.status(200).json({ success: true, message: "Application submitted successfully" });
     } catch (error) {
+      console.error("Error applying for job:", error.message);
         return res.status(500).json({ success: false, message: error.message });
     }
         
@@ -51,7 +52,7 @@ export const getUserJobApplications = async (req, res) => {
     try{
         const userId=req.auth.userId;
         const jobApplications=await JobApplication.find({ userId })
-        .populate('company', 'name email image')
+        .populate('companyId', 'name email image')
         .populate('jobId', 'title description location salary level category')
         .exec();
         if(jobApplications.length===0){
@@ -65,18 +66,42 @@ export const getUserJobApplications = async (req, res) => {
 }
 
 //update user profile(resume)
+import streamifier from 'streamifier';
+
 export const updateUserResume = async (req, res) => {
-    try {
-        const userId=req.auth.userId;
-        const resumeFile = req.resumeFile; 
-        const userData = await User.findById(userId);
-        if(resumeFile){
-            const resumeUpload = await cloudinary.uploader.upload(resumeFile.path);
-            userData.resume = resumeUpload.secure_url;
-            await userData.save();
-        }
-        return res.status(200).json({ success: true, message: "Resume updated successfully" });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
+
+  try {
+    const userId = req.auth.userId;
+    const resumeFile = req.file;
+
+    if (!resumeFile) {
+      return res.status(400).json({ success: false, message: "No file uploaded" });
     }
-}
+
+    const userData = await User.findById(userId);
+    if (!userData) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      async (error, result) => {
+        if (error) {
+          return res.status(500).json({ success: false, message: "Cloudinary upload failed" });
+        }
+
+        userData.resume = result.secure_url;
+        await userData.save();
+        return res.status(200).json({
+          success: true,
+          message: "Resume updated successfully",
+          resumeUrl: userData.resume,
+        });
+      }
+    );
+
+    streamifier.createReadStream(resumeFile.buffer).pipe(uploadStream);
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

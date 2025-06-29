@@ -19,11 +19,12 @@ await connectDB();
 await connectCloudinary();
 
 //Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*'
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(clerkMiddleware()); 
-
 //Routes
 app.get("/", (req, res) => res.send("API Working"));
 app.get("/debug-sentry", function mainHandler(req, res) {
@@ -37,6 +38,8 @@ app.use('/api/company',companyRoutes);
 app.use("/api/jobs",jobRoutes);
 
 app.use("/api/users",userRoutes);
+
+
 
 //PORT
 const PORT = process.env.PORT || 5000;
