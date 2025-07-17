@@ -91,7 +91,7 @@ export const loginCompany = async (req, res) => {
 //Get company details
 export const getCompanyData = async (req, res) => {
     // console.log("Company data fetched successfully");
-
+  
   try{
     const company=req.company;
     res.json({success:true, company})
@@ -119,7 +119,20 @@ export const postJob = async (req, res) => {
         category,
       });
       await job.save();
-      return res.status(201).json({success:true, message: "Job posted successfully", job });
+
+      // Notify all users about the new job
+      const users = await User.find({});
+      const company = await Company.findById(companyId);
+
+      for (const user of users) {
+        if (user.email) {
+          const subject = `New Job Alert: ${title} at ${company.name}`;
+          const text = `Hi ${user.name},\n\nA new job has been posted that might interest you.\n\nJob Title: ${title}\nCompany: ${company.name}\nLocation: ${location}\n\nApply now on our portal!\n\nBest regards,\nJob Portal Team`;
+          sendEmail(user.email, subject, text);
+        }
+      }
+
+      return res.status(201).json({success:true, message: "Job posted successfully and users notified.", job });
     }
     catch (error) {
       console.error(error);
@@ -200,7 +213,7 @@ export const changeVisibility = async (req, res) => {
 
 // Analyze all resumes for a job
 export const analyzeResumesForJob = async (req, res) => {
-  const { jobId, topN } = req.body; // Get topN from the request
+  const { jobId, topN } = req.body;
   const companyId = req.company._id;
 
   try {

@@ -61,7 +61,7 @@ const Applications = () => {
       fetchUserApplications();
     }
   }
-  , [user,fetchUserApplications]);
+  , [user]);
 
   return (
     <>
