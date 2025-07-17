@@ -6,6 +6,9 @@ import {v2 as cloudinary} from "cloudinary";
 import  {generateToken}  from "../utils/generateToken.js";
 import Job from "../models/Job.js";
 import streamifier from 'streamifier';
+import axios from 'axios';
+import FormData from 'form-data';
+import sendEmail from "../utils/sendEmail.js";
 
 
 //Register a new company
@@ -88,7 +91,7 @@ export const loginCompany = async (req, res) => {
 //Get company details
 export const getCompanyData = async (req, res) => {
     // console.log("Company data fetched successfully");
-  
+
   try{
     const company=req.company;
     res.json({success:true, company})
@@ -130,7 +133,7 @@ export const getCompanyJobApplicants = async (req, res) => {
     const companyId = req.company._id;
     const jobApplications = await JobApplication.find({ companyId })
       .populate('userId', 'name image resume')
-      .populate('jobId', 'title location category level salary')
+      .populate('jobId', 'title location category level salary description')
       .exec();
     return res.json({ success: true, jobApplications });
   } catch (error) {
@@ -195,3 +198,68 @@ export const changeVisibility = async (req, res) => {
   }
 }
 
+// Analyze all resumes for a job
+export const analyzeResumesForJob = async (req, res) => {
+  const { jobId, topN } = req.body; // Get topN from the request
+  const companyId = req.company._id;
+
+  try {
+    const job = await Job.findById(jobId);
+    if (!job || job.companyId.toString() !== companyId.toString()) {
+      return res.status(404).json({ success: false, message: "Job not found or not authorized." });
+    }
+
+    const applications = await JobApplication.find({ jobId }).populate('userId', 'name resume email');
+    let analyzedApplications = [];
+
+    for (const app of applications) {
+      if (!app.userId.resume) continue;
+
+      const formData = new FormData();
+      const response = await axios.get(app.userId.resume, { responseType: 'arraybuffer' });
+      formData.append('resume', Buffer.from(response.data), 'resume.pdf');
+      formData.append('job_desc', job.description.replace(/<[^>]*>?/gm, ''));
+
+      try {
+        const analysisRes = await axios.post('http://localhost:8001/api/analyze', formData, {
+          headers: {
+            ...formData.getHeaders()
+          }
+        });
+
+        if (analysisRes.data.success) {
+          analyzedApplications.push({
+            app,
+            score: analysisRes.data.analysis.overall_score
+          })
+        }
+      } catch (err) {
+        console.error(`Failed to analyze resume for applicant ${app.userId._id}:`, err.message);
+      }
+    }
+
+    // Sort by score in descending order
+    analyzedApplications.sort((a, b) => b.score - a.score);
+
+    // Get the top N candidates
+    const topCandidates = analyzedApplications.slice(0, topN);
+
+    for (const { app } of topCandidates) {
+      // Update status to "Accepted"
+      await JobApplication.findByIdAndUpdate(app._id, { status: "Accepted" });
+
+      // Send email notification
+      const subject = `Congratulations! You're Shortlisted for the ${job.title} Position`;
+      const text = `Dear ${app.userId.name},\n\nWe are pleased to inform you that you have been shortlisted for the ${job.title} position at ${req.company.name}. We will contact you shortly with the next steps.\n\nBest regards,\n${req.company.name}`;
+      
+      // We are not awaiting the email to make the API response faster
+      sendEmail(app.userId.email, subject, text);
+    }
+
+    res.json({ success: true, message: `Top ${topCandidates.length} resumes analyzed, accepted, and an email notification has been sent.` });
+
+  } catch (error) {
+    console.error("Error analyzing resumes:", error);
+    res.status(500).json({ success: false, message: "An error occurred during analysis." });
+  }
+};
