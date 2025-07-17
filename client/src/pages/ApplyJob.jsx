@@ -11,6 +11,7 @@ import Footer from '../components/Footer';
 import axios from 'axios';
 import {toast} from 'react-toastify';
 import { useAuth } from '@clerk/clerk-react';
+import ResumeAnalyzer from '../components/ResumeAnalyzer';
 
 const ApplyJob = () => {
   const { id } = useParams();
@@ -19,6 +20,7 @@ const ApplyJob = () => {
   const [isAlreadyApplied,setIsAlreadyApplied]=useState(false);
   const { jobs,backendUrl ,userData,userApplications,fetchUserApplications} = useContext(AppContext);
   const navigate=useNavigate();
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
   const fetchJob = async () => {
     try {
       const {data}=await axios.get(backendUrl+`/api/jobs/${id}`)
@@ -140,6 +142,23 @@ const ApplyJob = () => {
                   dangerouslySetInnerHTML={{ __html: JobData.description }}
                 ></div>
                 <button onClick={applyHandler} className='bg-blue-600 p-2.5 px-10 text-white rounded mt-10'>{isAlreadyApplied?'Already Applied':'Apply Now'}</button>
+                <button
+                  className="bg-green-600 p-2.5 px-10 text-white rounded mt-4 ml-4"
+                  onClick={() => setShowAnalyzer(true)}
+                >
+                  Analyze Resume
+                </button>
+                {showAnalyzer && (
+                  <div className="mt-8">
+                    <ResumeAnalyzer />
+                    <button
+                      className="mt-2 text-sm text-blue-600 underline"
+                      onClick={() => setShowAnalyzer(false)}
+                    >
+                      Close Analyzer
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Right Section More Jobs */}
