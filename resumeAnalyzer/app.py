@@ -23,7 +23,8 @@ app = Flask(__name__)
 # but it's better practice to be specific.
 trusted_origins = [
     "http://localhost:5173",  # Your Vite React dev server
-    "http://localhost:3000",  # In case you use Create React App
+    "http://localhost:3000",
+    "https://quiet-puppy-298507.netlify.app"  # In case you use Create React App
 ]
 CORS(app, resources={r"/api/*": {"origins": trusted_origins}})
 

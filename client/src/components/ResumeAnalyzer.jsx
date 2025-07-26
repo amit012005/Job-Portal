@@ -49,7 +49,7 @@ function ResumeAnalyzer({ jobDescription }) {
     
     try {
       // IMPORTANT: Point this to your new Python Flask API
-      const res = await axios.post('http://localhost:8001/api/analyze', formData, {
+      const res = await axios.post('https://job-portal-resume-analyzer.onrender.com/api/analyze', formData, {
         headers: {
             'Content-Type': 'multipart/form-data'
         }

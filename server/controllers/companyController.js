@@ -234,7 +234,7 @@ export const analyzeResumesForJob = async (req, res) => {
       formData.append('job_desc', job.description.replace(/<[^>]*>?/gm, ''));
 
       try {
-        const analysisRes = await axios.post('http://localhost:8001/api/analyze', formData, {
+        const analysisRes = await axios.post('https://job-portal-resume-analyzer.onrender.com/api/analyze', formData, {
           headers: {
             ...formData.getHeaders()
           }
